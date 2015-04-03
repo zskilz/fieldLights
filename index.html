@@ -7,6 +7,10 @@
     body {
       background: black;
     }
+
+    li {
+      list-style: none;
+    }
   </style>
 </head>
 <body>
@@ -56,22 +60,50 @@
     </td>
   </tr>
 </table>
-<canvas id="main" width="640" height="480"></canvas>
-<div style="color:white;">
+<canvas id="main" width="640"
+        height="360"></canvas>
+<div style="color:white;float:right">
   keyPad functioning:
 
-  1: toggle direction of play
-  2: toggle team position
-  3: turnover (initiates a direction toggle when done)
-  4: goal (initiates a team position toggle when done)
-  5:
-  6:
-  7: start play
-  8: idle
-  9: medic
-  *:
-  0: show data lines
-  #:
+  <ul>
+    <li>
+      1: toggle direction of play
+    </li>
+    <li>
+      2: toggle team position
+    </li>
+    <li>
+      3: turnover (initiates a direction toggle when done)
+    </li>
+    <li>
+      4: goal (initiates a team position toggle when done)
+    </li>
+    <li>
+      5:
+    </li>
+    <li>
+      6:
+    </li>
+    <li>
+      7: start play
+    </li>
+    <li>
+      8: idle
+    </li>
+    <li>
+      9: medic
+    </li>
+    <li>
+      *:
+    </li>
+    <li>
+      0: show data lines
+    </li>
+    <li>
+      #:
+    </li>
+  </ul>
+
 </div>
 <script>
   var canvas = document.getElementById('main');
@@ -90,21 +122,23 @@
    p1 drives 74*2+54 bulbs
    p2 drives 54 bulbs
 
-
-
    */
 
 
   function makeColor(c) {
+
     var r = c[0] * 255,
         g = c[1] * 255,
         b = c[2] * 255;
+
     return 'rgb(' + r.toFixed() + ',' + g.toFixed() + ',' + b.toFixed() + ')'
   }
 
   var d = 4;//displacement
   function drawRowFn(dir) {
+
     return function (x, y, l) {
+
       cntx.save();
 
       cntx.translate(x * d, y * d);
@@ -116,7 +150,7 @@
         cntx.closePath();
         cntx.translate((dir ? 0 : d), (dir ? d : 0));
       }
-      ;
+
 
       cntx.restore();
     }
@@ -128,9 +162,7 @@
       drawH = drawRowFn(0),
       drawV = drawRowFn(1);
 
-
   function drawField(p1, p2, p3, p4) {
-
 
     cntx.save();
     cntx.translate(40, 40);
@@ -149,12 +181,12 @@
     cntx.restore();
   }
 
-
   var startTime;
   var teamCol1 = [0, 1, 0];
   var teamCol2 = [1, 0.5, 0];
 
   function playWave(r, s, waves, speed) {
+
     var term = s.t * ((s.direction) ? 1 : -1);
     term = term / 1000.0 * Math.PI * 2 * (speed ? speed : 1);
     term += (r * Math.PI * 2) * (waves ? waves : 16);
@@ -171,13 +203,15 @@
     }
   }
   function mapToGoal(src, s) {
+
     var inner = (s.direction ? (s.teamPos ? 'p2' : 'p3') : (s.teamPos ? 'p3' : 'p2'));
     var outer = (s.direction ? (s.teamPos ? 'p1' : 'p4') : (s.teamPos ? 'p4' : 'p1'));
-    for (var i = 0; i < h; i++) {
+    var i;
+    for ( i = 0; i < h; i++) {
       s[inner][i] = src[i];
       s[outer][(h - i - 1) + l] = src[i + h + g];
     }
-    for (var i = 0; i < g + 1; i++) {
+    for ( i = 0; i < g + 1; i++) {
       s[outer][(g - i) + (l - g - 1)] = src[h * 2 + g + i];
       s[outer][(g - i) + l + h] = src[h + i];
     }
@@ -191,14 +225,14 @@
       s.p4[(l - i - 1) + l + h] = src[i + l * 2 + h];
       s.p4[(l - i - 1)] = src[i + l * 3 + h * 2];
     }
-    for (var i = 0; i < h; i++) {
+    for ( i = 0; i < h; i++) {
       s.p1[i + l] = src[i + l];
       s.p4[(h - i - 1) + l] = src[i + l * 3 + h];
     }
 
   }
   function blend(r, col1, col2) {
-    return [col1[0] * (1 - r) + col2[0] * r, col1[1] * (1 - r) + col2[1] * r, col1[2] * (1 - r) + col2[2] * r,]
+    return [col1[0] * (1 - r) + col2[0] * r, col1[1] * (1 - r) + col2[1] * r, col1[2] * (1 - r) + col2[2] * r]
   }
   function mod(col, m) {
     return col.map(function (val) {
@@ -207,7 +241,7 @@
   }
   var colorStateFns =
   {
-    idle    : function (s) {
+    idle     : function (s) {
       var outerCols = [];
       for (var i = 0; i < (l * 2 + h) * 2; i++) {
         var r = i / ((l * 2 + h) * 2);
@@ -222,51 +256,54 @@
       s.p2 = s.p1.slice(l, l + h);
       s.p3 = s.p4.slice(l, l + h);
 
-
     },
-    play    : function (s) {
-
-
+    play     : function (s) {
       var sideCol = [];
       for (var i = 0; i < l * 2; i++) {
-
-
         var r = i / (l * 2);
         r = s.teamPos ? r : (1 - r);
         sideCol[i] = mod(blend(r, teamCol1, teamCol2), playWave(r, s));
-
       }
       mapToSideLine(sideCol, s);
 
-
-      for (var i = 0; i < h; i++) {
+      for ( i = 0; i < h; i++) {
         s.p2[i] = s.p1[i + l] = s.teamPos ? teamCol1 : teamCol2;
         s.p3[i] = s.p4[i + l] = s.teamPos ? teamCol2 : teamCol1;
       }
 
+    },
+    medic    : function (s) {
+      var outerCols = [];
+      for (var i = 0; i < (l * 2 + h) * 2; i++) {
+        var r = i / ((l * 2 + h) * 2);
+        outerCols[i] = blend(playWave(1 - r, s, 32, 1), [.8, .8, .8], [.8, 0, 0])
+      }
+      mapToOuter(outerCols, s);
+
+      s.p2 = s.p1.slice(l, l + h);
+      s.p3 = s.p4.slice(l, l + h);
+
 
     },
-    medic   : function (s) {
-      for (var i = 0; i < l + l + h; i++) {
-        var r = i / (l + l + h);
-        s.p1[i] = s.p4[i] = mod([1, 0, 0], playWave(r, s, 1, .5));
-      }
-      for (var i = 0; i < h; i++) {
-        s.p2[i] = s.p3[i] = mod([1, 0, 0], playWave(0, s, 1, .5))
-      }
-
-
-    },
-    turnover: function (s) {
+    turnover : function (s) {
       if (startTime == undefined) startTime = s.t;
       if (s.t > (startTime + 3000)) {
         startTime = undefined;
         currState = 'play';
         s.direction = !s.direction;
       }
-      return colorStateFns.medic(s);
+
+      var outerCols = [];
+      for (var i = 0; i < (l * 2 + h) * 2; i++) {
+        var r = i / ((l * 2 + h) * 2);
+        outerCols[i] = mod(blend(playWave(1 - r, s, 16, 1), teamCol1, teamCol2), playWave(1 - r, s, 32, 1))
+      }
+      mapToOuter(outerCols, s);
+
+      s.p2 = s.p1.slice(l, l + h);
+      s.p3 = s.p4.slice(l, l + h);
     },
-    goal    : function (s) {
+    goal     : function (s) {
       if (startTime == undefined) startTime = s.t;
       if (s.t > (startTime + 3000)) {
         startTime = undefined;
@@ -280,8 +317,21 @@
         goalCol[i] = blend(playWave(r, s, 4, 5), teamCol1, teamCol2);
       }
       mapToGoal(goalCol, s);
+    },
+    dataLines: function (s) {
+      var r;
+      for (var i = 0; i < l * 2 + h; i++) {
+         r = i / l;
+        s.p1[i] = mod([1, 0, 0], playWave(r, s, 4, 5));
+        s.p4[i] = mod([1, 1, 0], playWave(r, s, 4, 5));
+      }
+      for ( i = 0; i < h; i++) {
+         r = i / l;
+        s.p2[i] = mod([0, 1, 0], playWave(r, s, 4, 5));
+        s.p3[i] = mod([0, 1, 1], playWave(r, s, 4, 5));
+      }
     }
-  }
+  };
 
   var currState = 'play';
   var stateObj = {
@@ -295,7 +345,7 @@
     //play
     teamPos  : false, //team 1 or team 2
     direction: false //direction
-  }
+  };
 
   function drawLoop() {
     cntx.clearRect(0, 0, canvas.width, canvas.height);
@@ -341,6 +391,7 @@
         currState = 'medic';
         break;
       case '0':
+        currState = 'dataLines';
         break;
       case '*':
         break;
