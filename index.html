@@ -57,6 +57,22 @@
   </tr>
 </table>
 <canvas id="main" width="640" height="480"></canvas>
+<div style="color:white;">
+  keyPad functioning:
+
+  1: toggle direction of play
+  2: toggle team position
+  3: turnover (initiates a direction toggle when done)
+  4: goal (initiates a team position toggle when done)
+  5:
+  6:
+  7: start play
+  8: idle
+  9: medic
+  *:
+  0: show data lines
+  #:
+</div>
 <script>
   var canvas = document.getElementById('main');
   var cntx = canvas.getContext('2d');
@@ -74,26 +90,15 @@
    p1 drives 74*2+54 bulbs
    p2 drives 54 bulbs
 
-   keyPad functioning:
-   1: toggle team teamPos
-   2: toggle team position
-   3: turnover (initiates a team teamPos toggle when done)
-   4: goal (initiates a team position toggle when done)
-   5:
-   6:
-   7: start play
-   8: idle
-   9: medic
-
 
 
    */
 
 
   function makeColor(c) {
-    var r = c.r * 255,
-        g = c.g * 255,
-        b = c.b * 255;
+    var r = c[0] * 255,
+        g = c[1] * 255,
+        b = c[2] * 255;
     return 'rgb(' + r.toFixed() + ',' + g.toFixed() + ',' + b.toFixed() + ')'
   }
 
@@ -128,7 +133,7 @@
 
 
     cntx.save();
-    cntx.translate(d * 2, d * 2);
+    cntx.translate(40, 40);
 
     drawH(0, 0, p1.slice(0, l).reverse());
     drawH(l + 1, 0, p4.slice(0, l));
@@ -146,40 +151,74 @@
 
 
   var startTime;
+  var teamCol1 = [0, 1, 0];
+  var teamCol2 = [1, 0.5, 0];
 
-  function playWave(r, s) {
+  function playWave(r, s, waves, speed) {
     var term = s.t * ((s.direction) ? 1 : -1);
-    term = term / 1000.0 * Math.PI * 2;
-    term += (r * 16 * Math.PI * 2);
+    term = term / 1000.0 * Math.PI * 2 * (speed ? speed : 1);
+    term += (r * Math.PI * 2) * (waves ? waves : 16);
 
     return (Math.sin(term) + 1) / 2
   }
-  function mapToSideLine(src,s){
+  function mapToSideLine(src, s) {
 
     for (var i = 0; i < l; i++) {
-      s.p1[i] = src[l-i-1];
-      s.p1[i+l+h] = src[i];
-      s.p4[i] = src[i+l];
-      s.p4[i+l+h] = src[l*2-i-1];
+      s.p1[i] = src[l - i - 1];
+      s.p1[i + l + h] = src[i];
+      s.p4[i] = src[i + l];
+      s.p4[i + l + h] = src[l * 2 - i - 1];
     }
+  }
+  function mapToGoal(src, s) {
+    var inner = (s.direction ? (s.teamPos ? 'p2' : 'p3') : (s.teamPos ? 'p3' : 'p2'));
+    var outer = (s.direction ? (s.teamPos ? 'p1' : 'p4') : (s.teamPos ? 'p4' : 'p1'));
+    for (var i = 0; i < h; i++) {
+      s[inner][i] = src[i];
+      s[outer][(h - i - 1) + l] = src[i + h + g];
+    }
+    for (var i = 0; i < g + 1; i++) {
+      s[outer][(g - i) + (l - g - 1)] = src[h * 2 + g + i];
+      s[outer][(g - i) + l + h] = src[h + i];
+    }
+
+  }
+  function mapToOuter(src, s) {
+
+    for (var i = 0; i < l; i++) {
+      s.p1[i] = src[i];
+      s.p1[i + l + h] = src[i + l + h];
+      s.p4[(l - i - 1) + l + h] = src[i + l * 2 + h];
+      s.p4[(l - i - 1)] = src[i + l * 3 + h * 2];
+    }
+    for (var i = 0; i < h; i++) {
+      s.p1[i + l] = src[i + l];
+      s.p4[(h - i - 1) + l] = src[i + l * 3 + h];
+    }
+
+  }
+  function blend(r, col1, col2) {
+    return [col1[0] * (1 - r) + col2[0] * r, col1[1] * (1 - r) + col2[1] * r, col1[2] * (1 - r) + col2[2] * r,]
+  }
+  function mod(col, m) {
+    return col.map(function (val) {
+      return val * m;
+    });
   }
   var colorStateFns =
   {
     idle    : function (s) {
-      for (var i = 0; i < l + l + h; i++) {
-        var r = i / (l + l + h) / 2.0;
-        s.p1[i] = {
-          r: (Math.sin((r * 4 * Math.PI * 2) + Math.PI + s.t / 1000.0 * Math.PI * 2) + 1) / 2,
-          g: (Math.sin((r * 8 * Math.PI * 2) + Math.PI + s.t / 500.0 * Math.PI * 2) + 1) / 2,
-          b: (Math.sin((r * 2 * Math.PI * 2) + Math.PI + s.t / 250.0 * Math.PI * 2) + 1) / 2
-        };
-        r = i / (l + l + h) / 2.0 + .5;
-        s.p4[i] = {
-          r: (Math.sin((r * 4 * Math.PI * 2) - s.t / 1000.0 * Math.PI * 2) + 1) / 2,
-          g: (Math.sin((r * 8 * Math.PI * 2) - s.t / 500.0 * Math.PI * 2) + 1) / 2,
-          b: (Math.sin((r * 2 * Math.PI * 2) - s.t / 250.0 * Math.PI * 2) + 1) / 2
-        };
+      var outerCols = [];
+      for (var i = 0; i < (l * 2 + h) * 2; i++) {
+        var r = i / ((l * 2 + h) * 2);
+        outerCols[i] = [
+          playWave(r, s, 4),
+          playWave(r, s, 2, 0.5),
+          playWave(r, s, 1, 0.25)
+        ];
       }
+      mapToOuter(outerCols, s);
+
       s.p2 = s.p1.slice(l, l + h);
       s.p3 = s.p4.slice(l, l + h);
 
@@ -188,34 +227,21 @@
     play    : function (s) {
 
 
-      var sideCol=[];
-      for (var i = 0; i < l*2; i++) {
+      var sideCol = [];
+      for (var i = 0; i < l * 2; i++) {
 
 
-        var r = i / (l*2) ;
-        r = s.teamPos?r:(1-r);
-        sideCol[i] = {
-          r:1*playWave(r,s),
-          g:r*playWave(r,s),
-          b:0
-        }
-
+        var r = i / (l * 2);
+        r = s.teamPos ? r : (1 - r);
+        sideCol[i] = mod(blend(r, teamCol1, teamCol2), playWave(r, s));
 
       }
-      mapToSideLine(sideCol,s);
+      mapToSideLine(sideCol, s);
 
 
       for (var i = 0; i < h; i++) {
-        s.p2[i]  = s.p1[i + l]  = {
-          r: 1,
-          g: s.teamPos ? 0 : 1,
-          b: 0
-        }
-        s.p3[i] =  s.p4[i + l] = {
-          r: 1,
-          g: s.teamPos ? 1:0,
-          b: 0
-        }
+        s.p2[i] = s.p1[i + l] = s.teamPos ? teamCol1 : teamCol2;
+        s.p3[i] = s.p4[i + l] = s.teamPos ? teamCol2 : teamCol1;
       }
 
 
@@ -223,18 +249,10 @@
     medic   : function (s) {
       for (var i = 0; i < l + l + h; i++) {
         var r = i / (l + l + h);
-        s.p1[i] = s.p4[i] = {
-          r: (Math.sin(s.t / 4000.0 * Math.PI * 2) + 1) / 2,
-          g: 0,
-          b: 0
-        }
+        s.p1[i] = s.p4[i] = mod([1, 0, 0], playWave(r, s, 1, .5));
       }
       for (var i = 0; i < h; i++) {
-        s.p2[i] = s.p3[i] = {
-          r: (Math.sin(s.t / 4000.0 * Math.PI * 2) + 1) / 2,
-          g: 0,
-          b: 0
-        }
+        s.p2[i] = s.p3[i] = mod([1, 0, 0], playWave(0, s, 1, .5))
       }
 
 
@@ -244,24 +262,39 @@
       if (s.t > (startTime + 3000)) {
         startTime = undefined;
         currState = 'play';
-        s.direction=!s.direction;
+        s.direction = !s.direction;
       }
       return colorStateFns.medic(s);
+    },
+    goal    : function (s) {
+      if (startTime == undefined) startTime = s.t;
+      if (s.t > (startTime + 3000)) {
+        startTime = undefined;
+        currState = 'play';
+        s.teamPos = !s.teamPos;
+      }
+      colorStateFns.play(s);
+      var goalCol = [];
+      for (var i = 0; i < (h * 2 + g * 2 + 2); i++) {
+        var r = i / (h * 2 + g * 2 + 2);
+        goalCol[i] = blend(playWave(r, s, 4, 5), teamCol1, teamCol2);
+      }
+      mapToGoal(goalCol, s);
     }
   }
 
-  var currState = 'idle';
+  var currState = 'play';
   var stateObj = {
     //pins from micro-controller emulated
-    p1        : [],
-    p2        : [],
-    p3        : [],
-    p4        : [],
+    p1       : [],
+    p2       : [],
+    p3       : [],
+    p4       : [],
     //time
-    t         : (new Date()).getTime(),
+    t        : (new Date()).getTime(),
     //play
-    teamPos: false, //team 1 or team 2
-    direction : false //direction
+    teamPos  : false, //team 1 or team 2
+    direction: false //direction
   }
 
   function drawLoop() {
