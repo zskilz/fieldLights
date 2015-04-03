@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+  <meta charset="UTF-8">
+  <title>Field Lights</title>
+  <style>
+    body {
+      background: black;
+    }
+  </style>
+</head>
+<body>
+<table id="keyPad">
+  <tr>
+    <td>
+      <button>1</button>
+    </td>
+    <td>
+      <button>2</button>
+    </td>
+    <td>
+      <button>3</button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <button>4</button>
+    </td>
+    <td>
+      <button>5</button>
+    </td>
+    <td>
+      <button>6</button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <button>7</button>
+    </td>
+    <td>
+      <button>8</button>
+    </td>
+    <td>
+      <button>9</button>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <button>*</button>
+    </td>
+    <td>
+      <button>0</button>
+    </td>
+    <td>
+      <button>#</button>
+    </td>
+  </tr>
+</table>
+<canvas id="main" width="640" height="480"></canvas>
+<script>
+  var canvas = document.getElementById('main');
+  var cntx = canvas.getContext('2d');
+
+  /*
+
+   topology: 4*54 bulbs, 4*74 bulbs
+
+   74*2
+   +--+---+---+--+
+   |  |       |  | 54
+   |p1|p2     |p3|p4
+   +--+---+---+--+
+
+   p1 drives 74*2+54 bulbs
+   p2 drives 54 bulbs
+
+   keyPad functioning:
+   1: toggle team teamPos
+   2: toggle team position
+   3: turnover (initiates a team teamPos toggle when done)
+   4: goal (initiates a team position toggle when done)
+   5:
+   6:
+   7: start play
+   8: idle
+   9: medic
+
+
+
+   */
+
+
+  function makeColor(c) {
+    var r = c.r * 255,
+        g = c.g * 255,
+        b = c.b * 255;
+    return 'rgb(' + r.toFixed() + ',' + g.toFixed() + ',' + b.toFixed() + ')'
+  }
+
+  var d = 4;//displacement
+  function drawRowFn(dir) {
+    return function (x, y, l) {
+      cntx.save();
+
+      cntx.translate(x * d, y * d);
+      for (var i = 0; i < l.length; i++) {
+        cntx.beginPath();
+        cntx.arc(0, 0, 1.4, 0, Math.PI * 2);
+        cntx.fillStyle = makeColor(l[i]);
+        cntx.fill();
+        cntx.closePath();
+        cntx.translate((dir ? 0 : d), (dir ? d : 0));
+      }
+      ;
+
+      cntx.restore();
+    }
+  }
+
+  var l = 74,
+      h = 54,
+      g = 17,//goal pos
+      drawH = drawRowFn(0),
+      drawV = drawRowFn(1);
+
+
+  function drawField(p1, p2, p3, p4) {
+
+
+    cntx.save();
+    cntx.translate(d * 2, d * 2);
+
+    drawH(0, 0, p1.slice(0, l).reverse());
+    drawH(l + 1, 0, p4.slice(0, l));
+
+    drawH(0, h + 1, p1.slice(l + h, l + l + h));
+    drawH(l + 1, h + 1, p4.slice(l + h, l + l + h).reverse());
+
+    drawV(0, 1, p1.slice(l, l + h));
+    drawV(g, 1, p2);
+    drawV(l * 2 - g, 1, p3);
+    drawV(l * 2, 1, p4.slice(l, l + h));
+
+    cntx.restore();
+  }
+
+
+  var startTime;
+
+  function playWave(r, s) {
+    var term = s.t * ((s.direction) ? 1 : -1);
+    term = term / 1000.0 * Math.PI * 2;
+    term += (r * 16 * Math.PI * 2);
+
+    return (Math.sin(term) + 1) / 2
+  }
+  function mapToSideLine(src,s){
+
+    for (var i = 0; i < l; i++) {
+      s.p1[i] = src[l-i-1];
+      s.p1[i+l+h] = src[i];
+      s.p4[i] = src[i+l];
+      s.p4[i+l+h] = src[l*2-i-1];
+    }
+  }
+  var colorStateFns =
+  {
+    idle    : function (s) {
+      for (var i = 0; i < l + l + h; i++) {
+        var r = i / (l + l + h) / 2.0;
+        s.p1[i] = {
+          r: (Math.sin((r * 4 * Math.PI * 2) + Math.PI + s.t / 1000.0 * Math.PI * 2) + 1) / 2,
+          g: (Math.sin((r * 8 * Math.PI * 2) + Math.PI + s.t / 500.0 * Math.PI * 2) + 1) / 2,
+          b: (Math.sin((r * 2 * Math.PI * 2) + Math.PI + s.t / 250.0 * Math.PI * 2) + 1) / 2
+        };
+        r = i / (l + l + h) / 2.0 + .5;
+        s.p4[i] = {
+          r: (Math.sin((r * 4 * Math.PI * 2) - s.t / 1000.0 * Math.PI * 2) + 1) / 2,
+          g: (Math.sin((r * 8 * Math.PI * 2) - s.t / 500.0 * Math.PI * 2) + 1) / 2,
+          b: (Math.sin((r * 2 * Math.PI * 2) - s.t / 250.0 * Math.PI * 2) + 1) / 2
+        };
+      }
+      s.p2 = s.p1.slice(l, l + h);
+      s.p3 = s.p4.slice(l, l + h);
+
+
+    },
+    play    : function (s) {
+
+
+      var sideCol=[];
+      for (var i = 0; i < l*2; i++) {
+
+
+        var r = i / (l*2) ;
+        r = s.teamPos?r:(1-r);
+        sideCol[i] = {
+          r:1*playWave(r,s),
+          g:r*playWave(r,s),
+          b:0
+        }
+
+
+      }
+      mapToSideLine(sideCol,s);
+
+
+      for (var i = 0; i < h; i++) {
+        s.p2[i]  = s.p1[i + l]  = {
+          r: 1,
+          g: s.teamPos ? 0 : 1,
+          b: 0
+        }
+        s.p3[i] =  s.p4[i + l] = {
+          r: 1,
+          g: s.teamPos ? 1:0,
+          b: 0
+        }
+      }
+
+
+    },
+    medic   : function (s) {
+      for (var i = 0; i < l + l + h; i++) {
+        var r = i / (l + l + h);
+        s.p1[i] = s.p4[i] = {
+          r: (Math.sin(s.t / 4000.0 * Math.PI * 2) + 1) / 2,
+          g: 0,
+          b: 0
+        }
+      }
+      for (var i = 0; i < h; i++) {
+        s.p2[i] = s.p3[i] = {
+          r: (Math.sin(s.t / 4000.0 * Math.PI * 2) + 1) / 2,
+          g: 0,
+          b: 0
+        }
+      }
+
+
+    },
+    turnover: function (s) {
+      if (startTime == undefined) startTime = s.t;
+      if (s.t > (startTime + 3000)) {
+        startTime = undefined;
+        currState = 'play';
+        s.direction=!s.direction;
+      }
+      return colorStateFns.medic(s);
+    }
+  }
+
+  var currState = 'idle';
+  var stateObj = {
+    //pins from micro-controller emulated
+    p1        : [],
+    p2        : [],
+    p3        : [],
+    p4        : [],
+    //time
+    t         : (new Date()).getTime(),
+    //play
+    teamPos: false, //team 1 or team 2
+    direction : false //direction
+  }
+
+  function drawLoop() {
+    cntx.clearRect(0, 0, canvas.width, canvas.height);
+
+    stateObj.t = (new Date()).getTime();
+
+    colorStateFns[currState](stateObj);
+
+    drawField(stateObj.p1, stateObj.p2, stateObj.p3, stateObj.p4);
+    requestAnimationFrame(drawLoop);
+  }
+
+  requestAnimationFrame(drawLoop);
+
+  var buttons = (document.getElementById('keyPad')).getElementsByTagName('button');
+
+  var setBtnCB = function (e) {
+    var key = e.target.innerHTML;
+    switch (key) {
+      case '1':
+        stateObj.direction = !stateObj.direction;
+        break;
+      case '2':
+        stateObj.teamPos = !stateObj.teamPos;
+        break;
+      case '3':
+        currState = 'turnover';
+        break;
+      case '4':
+        currState = 'goal';
+        break;
+      case '5':
+        break;
+      case '6':
+        break;
+      case '7':
+        currState = 'play';
+        break;
+      case '8':
+        currState = 'idle';
+        break;
+      case '9':
+        currState = 'medic';
+        break;
+      case '0':
+        break;
+      case '*':
+        break;
+      case '#':
+        break;
+      default :
+        break;
+    }
+  };
+
+  [].forEach.call(buttons, function (button) {
+    button.onclick = (setBtnCB);
+  });
+
+</script>
+</body>
+</html>
