@@ -477,6 +477,7 @@ void loop() {
        colorFn = &goal;
        break;
      case '5' :
+       colorFn = &test; 
        break;
      case '6' : 
        break;
@@ -487,7 +488,7 @@ void loop() {
        colorFn = &idle;
        break;
      case '9' :
-       colorFn = &test; 
+       colorFn = &idleCandyCane; 
        break;
      case '*' : 
        state.idleStateInd = (state.idleStateInd +1)%numIdleStates;
