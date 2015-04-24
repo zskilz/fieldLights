@@ -98,16 +98,6 @@ struct STATE {
     pos = true;
     dir = false;
   };
-  void init(){
-    p1->begin();
-    p1->show();
-    p2->begin();
-    p2->show();
-    p3->begin();
-    p3->show();
-    p4->begin();
-    p4->show();
-  };
   
   void show(){
     p1->show();
@@ -115,6 +105,20 @@ struct STATE {
     p3->show();
     p4->show();
   }
+  
+  void clear(){
+    p1->begin();
+    p2->begin();
+    p3->begin();
+    p4->begin();
+  }
+  
+  void init(){
+    this->clear();
+    this->show();
+  };
+  
+  
 };
 
 
@@ -277,6 +281,18 @@ void idleCandyCane(struct STATE &s){
     else
       mapToOuter(L,s,white);
   };
+  for(int i = 0 ; i < H; i++){
+    L=H-i-1;
+    if ( ((i+_t) % (width*2) )<width){
+      
+      s.p2->setPixelColor(i,red);
+      s.p3->setPixelColor(i,red);
+    }else{
+      
+      s.p2->setPixelColor(i,white);
+      s.p3->setPixelColor(i,white);
+    }
+  }
 };
  
 //Create sets of random white or gray pixels
@@ -285,6 +301,13 @@ void idleRandomWhite (struct STATE &s) {
   for(int i=0;i< outerL;i++) {
       V=random(255);
       mapToOuter(i,s,COL(V,V,V).get());
+  };
+  for(int i = 0 ; i < H; i++){
+    
+    V=random(255);
+    uint32_t s1 = COL(V,V,V).get();
+    s.p2->setPixelColor(i,s1);
+    s.p3->setPixelColor(i,s1);
   }
 };
 //Create sets of random colors
@@ -292,6 +315,14 @@ void idleRandomColor (struct STATE &s) {
   for(int i=0;i< outerL;i++) {
       mapToOuter(i,s,COL(random(255),random(255),random(255)).get());
   }
+  
+    for(int i = 0 ; i < H; i++){
+      
+       byte wave = playWave(0,s,1);
+      uint32_t s1 = COL(random(255),random(255),random(255)).get();
+      s.p2->setPixelColor(i,s1);
+      s.p3->setPixelColor(i,s1);
+    }
 };
 
 void idleKnightRider(struct STATE &s) {
@@ -325,41 +356,39 @@ ColorFn colorFn = &idle;
 
 void dataLines(struct STATE &s){
     int r;
-      for (int i = 0; i < (L * 2 + H) ; i++) {
-        r = map(i , 0 , L * 2 + H,0,255);
-        byte wave = playWave(r,s,4);
-        s.p1->setPixelColor(i,wave,0,0);
-        s.p4->setPixelColor(i,wave,wave,0);
-       
-      }
-      for(int i = 0 ; i < H; i++){
-        
-        r = map(i , 0 ,H,0,255);
-         byte wave = playWave(r,s,4);
-        s.p2->setPixelColor(i,0,wave,0);
-        s.p3->setPixelColor(i,0,wave,wave);
-      }
+    for (int i = 0; i < (L * 2 + H) ; i++) {
+      r = map(i , 0 , L * 2 + H,0,255);
+      byte wave = playWave(r,s,4);
+      s.p1->setPixelColor(i,wave,0,0);
+      s.p4->setPixelColor(i,wave,wave,0);
+     
+    }
+    for(int i = 0 ; i < H; i++){
+      
+      r = map(i , 0 ,H,0,255);
+       byte wave = playWave(r,s,4);
+      s.p2->setPixelColor(i,0,wave,0);
+      s.p3->setPixelColor(i,0,wave,wave);
+    }
 }
 
 void play(struct STATE &s){
     int r;
     COL t1 = s.pos?teamCol1:teamCol2;
     COL t2 = s.pos?teamCol2:teamCol1;
-      for (int i = 0; i < L*2 ; i++) {
-         r = map(i ,0, L*2,0,255);
-        //  COL c(playWave(r,s,1),
-        //  playWave(r, s, 32, 0.5),
-        //  playWave(r, s, 32, 0.25));
-         mapToSides(i, s, mod(COL(blend(r,t1,t2)),playWave(r,s,16)).get());
-      }
-      for(int i = 0 ; i < H; i++){
-        
-         byte wave = playWave(0,s,1);
-        COL s1 = mod(t1,wave);
-        COL s2 = mod(t2,wave);
-        s.p2->setPixelColor(i,s1.r,s1.g,s1.b);
-        s.p3->setPixelColor(i,s2.r,s2.g,s2.b);
-      }
+    for (int i = 0; i < L*2 ; i++) {
+       r = map(i ,0, L*2,0,255);
+       mapToSides(i, s, mod(COL(blend(r,t1,t2)),playWave(r,s,16)).get());
+    }
+    byte wave = playWave(0,s,16); 
+    uint32_t s1 = mod(t1,wave).get();
+    uint32_t s2 = mod(t2,wave).get();
+    for(int i = 0 ; i < H; i++){
+      s.p2->setPixelColor(i,s1);
+      s.p3->setPixelColor(i,s2);
+      s.p1->setPixelColor(L+i,s1);
+      s.p2->setPixelColor(L+i,s2);
+    }
 }
 
 
@@ -390,27 +419,27 @@ void goal(struct STATE &s){
     static unsigned long startTime = -1;
     if(startTime == -1)startTime=s.t;
     if (s.t > (startTime + 3000)) {
-        startTime = -1;
-        colorFn = &play;
-        s.pos = !s.pos;
-      }
-      
-      
-      play(s);
-      for (int i = 0; i < goalL; i++) {
-       r = map(i ,0, goalL,0,255);
-        mapToGoal(i,s,blend(playWave(r, s, 4, 5), teamCol1, teamCol2).get());
-      }
+      startTime = -1;
+      colorFn = &play;
+      s.pos = !s.pos;
+    }
+    
+    
+    play(s);
+    for (int i = 0; i < goalL; i++) {
+     r = map(i ,0, goalL,0,255);
+      mapToGoal(i,s,blend(playWave(r, s, 4, 5), teamCol1, teamCol2).get());
+    }
 }
 
 
 void test(struct STATE &s){
   int r;
-      for (int i = 0; i < (G+H)*2 ; i++) {
-         r = map(i, 0, L, 0, 255);
-         COL c = mod(COL(blend(r,teamCol1,teamCol2)),playWave(r,s,16));
-         mapToGoal(i,s,c.get());
-      }
+  for (int i = 0; i < (G+H)*2 ; i++) {
+     r = map(i, 0, L, 0, 255);
+     COL c = mod(COL(blend(r,teamCol1,teamCol2)),playWave(r,s,16));
+     mapToGoal(i,s,c.get());
+  }
       
 }
 
@@ -471,29 +500,36 @@ void loop() {
        state.pos = !state.pos;
        break;
      case '3' : 
+        state.clear();
        colorFn = &turnover;
        break;
      case '4' : 
        colorFn = &goal;
        break;
      case '5' :
+        state.clear();
        colorFn = &test; 
        break;
      case '6' : 
        break;
      case '7' : 
+     
+        state.clear();
        colorFn = &play;
        break;
      case '8' : 
+        state.clear();
        colorFn = &idle;
        break;
      case '9' :
        colorFn = &idleCandyCane; 
        break;
      case '*' : 
+        state.clear();
        state.idleStateInd = (state.idleStateInd +1)%numIdleStates;
        break;
      case '#' : 
+        state.clear();
        state.idleStateInd--;
        state.idleStateInd = state.idleStateInd<0?numIdleStates-1:state.idleStateInd;
        
