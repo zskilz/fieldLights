@@ -1,12 +1,13 @@
 #include <Adafruit_NeoPixel.h>
 #include <avr/power.h>
 /* @file keypadColor.pde
-|| @version 1.0
-|| @author Alexander Brevig
-|| @contact alexanderbrevig@gmail.com
+|| @version 0.1.0
+|| @author Petrus J. Pretorius
+|| @contact zskil@gmail.com
 ||
 || @description
-|| | Demonstrates the simplest use of the matrix Keypad library.
+|| | Field Light Adafruid LED controller project for a Ultamite Disc field. 
+|| | used keypas sourcy by Alexander Brevig and some snippets from Adafruit examples.
 || #
 */
 #include <Keypad.h>
