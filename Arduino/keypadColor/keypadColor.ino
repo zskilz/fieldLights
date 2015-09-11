@@ -315,11 +315,11 @@ void idleRandomColor (struct STATE &s) {
   for(int i=0;i< outerL;i++) {
       mapToOuter(i,s,COL(random(255),random(255),random(255)).get());
   }
-  
+  uint32_t s1;
     for(int i = 0 ; i < H; i++){
       
        byte wave = playWave(0,s,1);
-      uint32_t s1 = COL(random(255),random(255),random(255)).get();
+      s1 = COL(random(255),random(255),random(255)).get();
       s.p2->setPixelColor(i,s1);
       s.p3->setPixelColor(i,s1);
     }
@@ -344,7 +344,7 @@ void idleKnightRider(struct STATE &s) {
   }
 };
 
-ColorFn idleColorFn[] = {&idleRainbow,&idleTheatreChase,&idleTheatreChaseRainbow,&idleWipeFX,&idleCandyCane,&idleRandomWhite,&idleRandomColor,&idleKnightRider};
+ColorFn idleColorFn[] = {&idleRainbow,&idleTheatreChase,&idleTheatreChaseRainbow,&idleWipeFX,&idleCandyCane,&idleRandomWhite,&idleRandomColor};
 int numIdleStates = sizeof(idleColorFn)/sizeof(ColorFn);
 
 void idle(struct STATE &s){
@@ -384,7 +384,7 @@ void play(struct STATE &s){
     uint32_t s1 = mod(t1,wave).get();
     uint32_t s2 = mod(t2,wave).get();
     for(int i = 0 ; i < H; i++){
-      s.p2->setPixelColor(i,s1);
+      s.p4->setPixelColor(i,s1);
       s.p3->setPixelColor(i,s2);
       s.p1->setPixelColor(L+i,s1);
       s.p2->setPixelColor(L+i,s2);
@@ -434,11 +434,12 @@ void goal(struct STATE &s){
 
 
 void test(struct STATE &s){
-  int r;
+  int r, t = ((s.t%1000)/1000.0)*255;;
   for (int i = 0; i < (G+H)*2 ; i++) {
      r = map(i, 0, L, 0, 255);
-     COL c = mod(COL(blend(r,teamCol1,teamCol2)),playWave(r,s,16));
-     mapToGoal(i,s,c.get());
+     uint32_t tc = Wheel((r+t)%255);
+     //uint32_t tc = mod(COL(blend(r,teamCol1,teamCol2)),playWave(r,s,16)).get();
+     mapToGoal(i,s,tc);
   }
       
 }
@@ -481,12 +482,32 @@ void setup() {
 
 }
 
+unsigned long _St = millis();
 
+void clearAll(){
+    for (int i = 0; i < (L * 2 + H) ; i++) {
+      state.p1->setPixelColor(i,0);
+      state.p4->setPixelColor(i,0);
+     
+    }
+    for(int i = 0 ; i < H; i++){
+      state.p2->setPixelColor(i,0);
+      state.p3->setPixelColor(i,0);
+    }
+
+}
     
 void loop() {
   char key = keypad.getKey();
     
   state.t = millis();
+  
+  if(state.t >  (_St + 1000*60*10)){
+    _St = state.t;
+    
+    state.clear();
+    state.idleStateInd = (state.idleStateInd +1)%numIdleStates;
+  }
   
   if (key){
    switch(key){
@@ -508,6 +529,7 @@ void loop() {
        break;
      case '5' :
         state.clear();
+        clearAll();
        colorFn = &test; 
        break;
      case '6' : 
