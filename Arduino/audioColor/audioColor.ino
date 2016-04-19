@@ -1,5 +1,5 @@
 #include <Adafruit_NeoPixel.h>
-//#include <avr/power.h>
+#include <avr/power.h>
 /* @file keypadColor.pde
 || @version 0.1.0
 || @author Petrus J. Pretorius
@@ -183,24 +183,24 @@ struct STATE {
 
 /*************Pull frquencies from Spectrum Shield****************/
   void Read_Frequencies(){
-  //Read frequencies for each band
-  for (freq_amp = 0; freq_amp<7; freq_amp++)
-  {
-    FL[freq_amp] = analogRead(DC_One);
-    FR[freq_amp] = analogRead(DC_Two); 
-    digitalWrite(STROBE, HIGH);
-    digitalWrite(STROBE, LOW);
+    //Read frequencies for each band
+    for (freq_amp = 0; freq_amp<7; freq_amp++)
+    {
+      FL[freq_amp] = analogRead(DC_One);
+      FR[freq_amp] = analogRead(DC_Two); 
+      digitalWrite(STROBE, HIGH);
+      digitalWrite(STROBE, LOW);
+    }
+  
+  // combine L+R and overlap.
+    low = ((FL[0]+FL[1]+FL[2] /*+ FR[0]+FR[1]+FR[2] )/6*/ )/3) / 1024.0;
+    mid = ((FL[2]+FL[3]+FL[4] /*+ FR[2]+FR[3]+FR[4] )/6*/)/3) / 1024.0;
+    high = ((FL[4]+FL[5]+FL[6] /*+ FR[4]+FR[5]+FR[6] )/6*/)/3) / 1024.0;
+  
+    low = low < threshHold ? 0.0 : low*low;
+    mid = mid < threshHold ? 0.0 : mid*mid*mid;
+    high = high < threshHold ? 0.0 : high*high*high;
   }
-
-// combine L+R and overlap.
-  low = ((FL[0]+FL[1]+FL[2] + FR[0]+FR[1]+FR[2] )/6) / 1024.0;
-  mid = ((FL[2]+FL[3]+FL[4] + FR[2]+FR[3]+FR[4] )/6) / 1024.0;
-  high = ((FL[4]+FL[5]+FL[6] + FR[4]+FR[5]+FR[6] )/6) / 1024.0;
-
-  low = low < threshHold ? 0.0 : low*low;
-  mid = mid < threshHold ? 0.0 : mid*mid*mid;
-  high = high < threshHold ? 0.0 : high*high*high;
-}
 };
 
 
