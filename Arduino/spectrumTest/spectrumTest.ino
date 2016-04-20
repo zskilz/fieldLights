@@ -20,19 +20,8 @@ void setupSpectrumShield(){
   pinMode(RESET, OUTPUT);
   pinMode(DC_One, INPUT);
   pinMode(DC_Two, INPUT);  
-  digitalWrite(STROBE, HIGH);
-  digitalWrite(RESET, HIGH);
-
-  //Initialize Spectrum Analyzers
-  digitalWrite(STROBE, LOW);
-  delay(1);
-  digitalWrite(RESET, HIGH);
-  delay(1);
-  digitalWrite(STROBE, HIGH);
-  delay(1);
-  digitalWrite(STROBE, LOW);
-  delay(1);
   digitalWrite(RESET, LOW);
+  digitalWrite(STROBE, HIGH);
 }
 
 
@@ -54,13 +43,18 @@ void loop() {
 
 /*************Pull frquencies from Spectrum Shield****************/
 void Read_Frequencies(){
+  
+  digitalWrite(RESET, HIGH); 
+  digitalWrite(RESET, LOW);
+  
   //Read frequencies for each band
   for (freq_amp = 0; freq_amp<7; freq_amp++)
-  {
+  {   
+    digitalWrite(STROBE, LOW);
+    delay(1);
     Frequencies_One[freq_amp] = analogRead(DC_One);
     Frequencies_Two[freq_amp] = analogRead(DC_Two); 
     digitalWrite(STROBE, HIGH);
-    digitalWrite(STROBE, LOW);
   }
 }
 
