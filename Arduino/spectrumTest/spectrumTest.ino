@@ -51,7 +51,7 @@ void Read_Frequencies(){
   for (freq_amp = 0; freq_amp<7; freq_amp++)
   {   
     digitalWrite(STROBE, LOW);
-    delay(1);
+    delayMicroseconds(30);
     Frequencies_One[freq_amp] = analogRead(DC_One);
     Frequencies_Two[freq_amp] = analogRead(DC_Two); 
     digitalWrite(STROBE, HIGH);

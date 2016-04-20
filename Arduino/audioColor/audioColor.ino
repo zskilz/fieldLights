@@ -179,7 +179,7 @@ struct STATE {
     {
       
       digitalWrite(STROBE, LOW);
-      delay(1);
+      delayMicroseconds(30);
       FL[freq_amp] = analogRead(DC_One);
       FR[freq_amp] = analogRead(DC_Two); 
       digitalWrite(STROBE, HIGH);
