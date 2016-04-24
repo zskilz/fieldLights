@@ -233,12 +233,15 @@ void idleRandomColor (struct STATE &s) {
 };
 
 void idleKnightRider(struct STATE &s) {
-  int width = 2;
-  float _speed = 20;
+  int width = 8;
+  float _speed = 100;
   int _t = int((s.t)/1000.0*_speed)%(L*2) ; 
   if( _t > L){
     _t=L-(_t%L);
   }
+
+ // -------------------------i------w
+ // --------------------------------t
   
   for(int i=0;i< L;i++) {
     if ( ((i+width) > _t)&&((i-width) < _t ))
