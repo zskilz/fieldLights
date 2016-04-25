@@ -38,7 +38,7 @@ const unsigned long stateChangeInterval =  1000*20;//600000;//(1000*60*10);
 
 uint32_t _Color(byte r, byte g, byte b);
 
-const byte D = 255*percentageDark/100;
+const byte D = 255*(100-percentageDark)/100;
 
 struct COL{
   byte r;
