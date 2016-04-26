@@ -45,8 +45,12 @@ const byte H = 57;//57;//57;
 const byte G = 24;//24;
 const int G1_offset = 0;
 const int G2_offset = 0;
+const unsigned long stateChangeInterval =  600000;//(1000*60*10);
+
 //===============================================================
 
+
+uint32_t _Color(byte r, byte g, byte b);
 
 struct COL{
   byte r;
@@ -497,13 +501,15 @@ void clearAll(){
     }
 
 }
+
+
     
 void loop() {
   char key = keypad.getKey();
     
   state.t = millis();
   
-  if(state.t >  (_St + 1000*60*10)){
+  if((state.t - _St)>  stateChangeInterval){
     _St = state.t;
     
     state.clear();
